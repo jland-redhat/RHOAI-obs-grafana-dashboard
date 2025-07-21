@@ -1,0 +1,69 @@
+# Production configuration for RHOAI Observability Grafana Dashboards
+namespace: rhoai-observability
+
+# Common labels for all resources
+commonLabels:
+  app.kubernetes.io/part-of: rhoai-observability
+  app.kubernetes.io/managed-by: helm
+  environment: production
+  team: observability
+
+# Common annotations
+commonAnnotations:
+  deployment.kubernetes.io/revision: "1"
+  monitoring.coreos.com/enabled: "true"
+
+# Grafana folder organization
+grafanaFolder: "RHOAI Observability"
+
+# Dashboard folders to deploy
+dashboard_folders:
+  - llm-d      # LLM-D dashboards for large language model monitoring
+  - vllm       # vLLM dashboards for inference performance
+
+# Dashboard namespace for Grafana organization
+dashboardNamespace: "rhoai-production"
+
+# Required Grafana plugins
+plugins:
+  - name: "grafana-piechart-panel"
+    version: "1.6.4"
+  - name: "grafana-polystat-panel"
+    version: "1.2.10"
+
+# Grafana instance selector - target production Grafana
+instanceSelector:
+  matchLabels:
+    app: grafana
+    environment: production
+
+# Dashboard behavior settings
+dashboard:
+  refresh: "30s"
+  timeFrom: "1h"
+  templating:
+    enabled: true
+  tags:
+    - "rhoai"
+    - "observability"
+    - "ai-ml"
+    - "production"
+
+# Resource constraints
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# RBAC configuration
+rbac:
+  create: true
+  serviceAccountName: "rhoai-dashboard-manager"
+
+# Grafana Operator settings
+grafanaOperator:
+  enabled: true
+  apiVersion: "grafana.integreatly.org/v1beta1"

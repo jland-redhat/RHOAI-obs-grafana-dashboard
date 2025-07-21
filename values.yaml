@@ -1,3 +1,6 @@
+# Default namespace where the dashboards will be created
+namespace: monitoring
+
 # Labels to add to all resources
 commonLabels: {}
 
@@ -7,22 +10,64 @@ commonAnnotations: {}
 # Folder name in Grafana where the dashboards will be placed
 grafanaFolder: "Openshift AI Observability"
 
+# List of folders inside of `dashboards` to deploy
+# These correspond to subdirectories under the dashboards/ folder
+dashboard_folders:
+  - llm-d
+  - vllm
+
 # Dashboard namespace (used for dashboard identification)
 dashboardNamespace: "default"
 
-# Plugins required by the dashboards
+# List of Grafana plugins required by the dashboards
 # Example:
 # plugins:
 #   - name: "grafana-piechart-panel"
 #     version: "1.6.4"
+#   - name: "grafana-clock-panel"
+#     version: "1.3.0"
 plugins: []
 
-# Grafana instance selector
-# Defines which Grafana instance should be used for these dashboards
+# Selector for the Grafana instance where dashboards should be deployed
+# This determines which Grafana instance will receive these dashboards
 instanceSelector:
   matchLabels:
     app: grafana
 
-dashboard_folders:
-  - llm-d
-  - vllm  
+# Global settings for dashboard behavior
+dashboard:
+  # Default refresh interval for dashboards (if not specified in JSON)
+  refresh: "30s"
+  # Default time range for dashboards (if not specified in JSON)
+  timeFrom: "1h"
+  # Enable templating and variable substitution
+  templating:
+    enabled: true
+  # Dashboard tags to apply to all dashboards
+  tags:
+    - "rhoai"
+    - "observability"
+    - "ai-ml"
+
+# Resource limits and requests for the dashboard resources
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Enable creation of additional Kubernetes resources
+rbac:
+  # Create RBAC resources for dashboard management
+  create: true
+  # Service account name to use (if not specified, defaults to chart fullname)
+  serviceAccountName: ""
+
+# Configuration for the Grafana Operator integration
+grafanaOperator:
+  # Whether to create resources that depend on Grafana Operator
+  enabled: true
+  # API version to use for GrafanaDashboard resources
+  apiVersion: "grafana.integreatly.org/v1beta1"

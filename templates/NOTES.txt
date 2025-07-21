@@ -1,0 +1,55 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+Dashboard Information:
+{{- $namespace := include "grafana-dashboards.namespace" . }}
+- Namespace: {{ $namespace }}
+- Grafana Folder: {{ .Values.grafanaFolder }}
+- Dashboard Namespace: {{ .Values.dashboardNamespace }}
+
+{{- if .Values.dashboard_folders }}
+Deployed Dashboard Folders:
+{{- range .Values.dashboard_folders }}
+  - {{ . }}
+{{- end }}
+{{- end }}
+
+To see your dashboards, run:
+  kubectl get grafanadashboards -n {{ $namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.grafanaOperator.enabled }}
+Grafana Operator integration is enabled.
+{{- else }}
+WARNING: Grafana Operator integration is disabled. Dashboards will not be deployed.
+{{- end }}
+
+{{- if .Values.plugins }}
+Required Grafana Plugins:
+{{- range .Values.plugins }}
+  - {{ .name }}{{ if .version }} (v{{ .version }}){{ end }}
+{{- end }}
+
+Make sure these plugins are installed in your Grafana instance.
+{{- end }}
+
+{{- if .Values.rbac.create }}
+RBAC resources have been created for dashboard management.
+{{- end }}
+
+{{- if .Values.instanceSelector }}
+Dashboards will be deployed to Grafana instances matching:
+{{- range $key, $value := .Values.instanceSelector.matchLabels }}
+  {{ $key }}: {{ $value }}
+{{- end }}
+{{- end }}
+
+For more information:
+  - Chart documentation: {{ .Chart.Home | default "https://github.com/agent-ops-crew/RHOAI-obs-grafana-dashboard" }}
+  - Grafana Operator docs: https://grafana.github.io/grafana-operator/
+
+To upgrade your deployment:
+  helm upgrade {{ .Release.Name }} {{ .Chart.Name }} -n {{ .Release.Namespace }}
+
+To uninstall:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }} 

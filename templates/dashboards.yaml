@@ -1,0 +1,27 @@
+{{- range $folder := .Values.dashboard_folders }}
+{{- range $path, $bytes := $.Files.Glob (printf "dashboards/%s/*.json" $folder) }}
+{{- $dashboardName := base $path | trimSuffix ".json" | kebabcase }}
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: {{ include "grafana-dashboards.fullname" $ }}-{{ $dashboardName }}
+  namespace: {{ $.Values.namespace | default $.Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "grafana-dashboards.name" $ }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/version: {{ $.Chart.AppVersion | quote }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    helm.sh/chart: {{ include "grafana-dashboards.chart" $ }}
+    grafana-dashboard: "true"
+    dashboard-folder: {{ $folder | quote }}
+spec:
+  name: {{ $dashboardName }}
+  instanceSelector:
+    matchLabels:
+      app: grafana
+  json: |
+{{ $.Files.Get $path | nindent 4 }}
+  folder: {{ $.Values.grafanaFolder | quote }}
+{{- end }}
+{{- end }}

@@ -1,30 +1,75 @@
-{{- $files := .Files }}
-{{- $grafanaFolder := .Values.grafanaFolder | quote }}
-{{- range $folder := .Values.dashboard_folders }}
-{{- range $path, $bytes := .Files.Glob "dashboards/{{ $folder }}/*.json" }}
+{{- if .Values.grafanaOperator.enabled -}}
+{{- $files := .Files -}}
+{{- $grafanaFolder := .Values.grafanaFolder -}}
+{{- $namespace := include "grafana-dashboards.namespace" . -}}
+{{- range $folder := .Values.dashboard_folders -}}
+{{- range $path, $bytes := $.Files.Glob (printf "dashboards/%s/*.json" $folder) -}}
+{{- $dashboardName := base $path | trimSuffix ".json" | kebabcase -}}
+{{- $dashboardContent := $files.Get $path -}}
 ---
-apiVersion: grafana.integreatly.org/v1beta1
+apiVersion: {{ $.Values.grafanaOperator.apiVersion }}
 kind: GrafanaDashboard
 metadata:
-  name: {{ base $path | trimSuffix ".json" | kebabcase }}
-  {{- with $.Values.commonLabels }}
+  name: {{ include "grafana-dashboards.fullname" $ }}-{{ $dashboardName }}
+  namespace: {{ $namespace }}
   labels:
+    {{- include "grafana-dashboards.labels" $ | nindent 4 }}
+    grafana-dashboard: "true"
+    dashboard-folder: {{ $folder | quote }}
+    {{- with $.Values.commonLabels }}
     {{- toYaml . | nindent 4 }}
-  {{- end }}
-  {{- with $.Values.commonAnnotations }}
+    {{- end }}
   annotations:
+    meta.helm.sh/release-name: {{ $.Release.Name }}
+    meta.helm.sh/release-namespace: {{ $.Release.Namespace }}
+    {{- with $.Values.commonAnnotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  name: {{ $dashboardName }}
+  {{- with $.Values.instanceSelector }}
+  instanceSelector:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-spec:
-  name: {{ base $path | trimSuffix ".json" | kebabcase }}
-  instanceSelector:
-    {{- toYaml $.Values.instanceSelector | nindent 4 }}
+  {{- if $.Values.dashboard.templating.enabled }}
+  {{- /* Process dashboard content for templating and variable substitution */ -}}
+  {{- $processedContent := $dashboardContent -}}
+  {{- /* Replace common template variables */ -}}
+  {{- $processedContent = $processedContent | replace "${DS_PROMETHEUS}" "prometheus" -}}
+  {{- $processedContent = $processedContent | replace "$__rate_interval" "5m" -}}
+  {{- /* Add dashboard-level configurations if specified */ -}}
+  {{- if $.Values.dashboard.refresh -}}
+  {{- $refreshPattern := `"refresh":\s*"[^"]*"` -}}
+  {{- $refreshReplacement := printf `"refresh": %q` $.Values.dashboard.refresh -}}
+  {{- $processedContent = $processedContent | regexReplaceAll $refreshPattern $refreshReplacement -}}
+  {{- end }}
+  {{- if $.Values.dashboard.timeFrom -}}
+  {{- $timePattern := `"timeFrom":\s*"[^"]*"` -}}
+  {{- $timeReplacement := printf `"timeFrom": %q` $.Values.dashboard.timeFrom -}}
+  {{- $processedContent = $processedContent | regexReplaceAll $timePattern $timeReplacement -}}
+  {{- end }}
   json: |
-    {{- $files.Get $path | nindent 4 }}
-  folder: {{ $grafanaFolder }}
+    {{- $processedContent | nindent 4 }}
+  {{- else }}
+  json: |
+    {{- $dashboardContent | nindent 4 }}
+  {{- end }}
+  folder: {{ $grafanaFolder | quote }}
+  {{- if $.Values.dashboardNamespace }}
+  namespace: {{ $.Values.dashboardNamespace | quote }}
+  {{- end }}
   {{- if $.Values.plugins }}
   plugins:
     {{- toYaml $.Values.plugins | nindent 4 }}
   {{- end }}
+  {{- if $.Values.dashboard.tags }}
+  tags:
+    {{- toYaml $.Values.dashboard.tags | nindent 4 }}
+  {{- end }}
+  {{- with $.Values.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
