@@ -86,6 +86,17 @@ dashboard_folders:
 2. Save it in the `dashboards` directory with a descriptive name (e.g., `kubernetes-cluster.json`)
 3. The chart will automatically pick up the new dashboard on the next deployment
 
+## Creating Datasource
+
+A datasource wtih access to an API key from a service account with access to the Promethus Instance will need to be created.
+
+More info on creating that key can be found [here](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/authentication_and_authorization/understanding-and-creating-service-accounts#service-accounts-overview_understanding-service-accounts)
+
+Creating a new token:
+```
+oc create token grafana-sa -n grafana-user
+```
+
 ## Upgrading
 
 To upgrade your deployment with a new dashboard or configuration:
