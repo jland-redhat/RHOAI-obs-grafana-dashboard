@@ -94,7 +94,7 @@ More info on creating that key can be found [here](https://docs.redhat.com/en/do
 
 Creating a new token:
 ```
-oc create token grafana-sa -n grafana-user
+oc create token grafana-sa -n user-grafana
 ```
 
 ## Upgrading
